@@ -377,8 +377,10 @@ Pn_standarizada %>% dplyr::filter(Year == 2020) %>%  ggplot(aes(x = Month, y = P
   #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
   geom_bar(stat = "identity", position = "dodge", aes(fill = Genotipo), col = "black") +
   theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
-  theme_bw() +
-  labs(title = "Producción estandarizada año 2020", y = "Producción total (kg/planta)") 
+  theme_bw() + 
+  labs(title = "Producción estandarizada año 2020", y = "Producción total (kg/planta)", x = "Meses", fill = "Material") +
+  theme(
+        text = element_text(size = 15))
 ```
 
 # Producción acumulada estandarizada año 2021
@@ -391,7 +393,7 @@ Pn_standarizada %>% dplyr::filter(Year == 2021) %>%  ggplot(aes(x = Month, y = P
   geom_bar(stat = "identity", position = "dodge", aes(fill = Genotipo), col = "black") +
   theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
   theme_bw() +
-  labs(y = "Producción total (kg/planta)", x = "Meses", fill = "Genotipos") +
+  labs(y = "Producción total (kg/planta)", x = "Meses", fill = "Material") +
   theme(
         text = element_text(size = 15))
 ```
@@ -438,6 +440,8 @@ mean_comparisons_mora_2020_std$emmeans # adjusted variety means
 La prueba de medias mostró que la producción promedio mas grande fue la del material San Antonio con 0.86 kg/planta, seguido de Brazos con 0.453 kg/planta y finalmente la producción promedio de Castilla con 0.316 kg/planta.
 
 ```{r fig.align='center', fig.width = 10, fig.height = 6}
+
+Ticks <- c("Castilla estandarizada", "Brazos estandarizada", "San Antonio estandarizada")
 # plotting Results for Tto para mostrar
 ggplot() +
   # #black dots representing the raw data
@@ -464,15 +468,18 @@ ggplot() +
     data = mean_comparisons_mora_2020_std$emmeans,
     aes(y = emmean, x = Genotipo_estandarizado, label = .group),
     color = "#333b69",
+    size = 5,
     position = position_nudge(y = 0.1)
   ) + 
   #ylim(0, NA) + # force y-axis to start at 0
   ylab("Producción estandarizada (kg/planta)") + # label y-axis
   xlab(NULL) +      # label x-axis
-  labs(title = "Agrupamiento de Tukey | Producción promedio 2020 estandarizada",caption = "
-       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
-       ") +
-  theme_bw() # clearer plot format 
+  labs(title = "Agrupamiento de Tukey | Producción promedio 2020 estandarizada") + 
+  scale_x_discrete(labels= Ticks) +
+  theme_bw()  + # clearer plot format +
+theme(
+        text = element_text(size = 15))
+
 ```
 
 # Analisis de varianza año 2021
@@ -498,6 +505,9 @@ mean_comparisons_mora_2021_std$emmeans # adjusted variety means
 
 ```{r fig.align='center', fig.width = 10, fig.height = 6}
 # plotting Results for Tto para mostrar
+
+axis <- c("San antonio estandarizada", "Brazos estandarizada", "Castilla estandarizada")
+
 ggplot() +
   geom_col(
     data = mean_comparisons_mora_2021_std$emmeans,
@@ -509,15 +519,17 @@ ggplot() +
     data = mean_comparisons_mora_2021_std$emmeans,
     aes(y = emmean, x = Genotipo_estandarizado, label = .group),
     color = "#333b69",
+    size = 5,
     position = position_nudge(y = 0.3)
   ) + 
   ylim(0, NA) + # force y-axis to start at 0
   ylab("Producción (kg/planta)") + # label y-axis
-  xlab("Genotipos") +      # label x-axis
-  labs(title = "Agrupamiento de Tukey | Producción 2021 estandarizada",caption = "
-       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
-       ") +
-  theme_bw() # clearer plot format 
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción 2021 estandarizada") +
+  scale_x_discrete(labels= axis) +
+  theme_bw()  + # clearer plot format +
+theme(
+        text = element_text(size = 15))
 ```
 
 # Analisis de varianza de la interacción 2021
