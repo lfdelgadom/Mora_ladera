@@ -1,0 +1,1587 @@
+---
+title: "Analisis de resultados Rubus glaucus"
+author: Herney Dario Vasquez, Diego Rojas, Deysi Johana Guerrero, Viviana Eugenia
+  Castro y Luis Fernando Delgado Muñoz
+date: "01/03/2022"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE, cache = FALSE}
+
+
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(kableExtra)
+library(readxl)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+
+
+```
+
+```{r}
+# Datos crudos
+
+Mora_pn <- read_excel("Data/DATOS CRUDOS MORA.xlsx", sheet = "Produccion", na = ".")
+
+Mora_pn <- Mora_pn %>% pivot_longer(c(`San Antonio`, Brazos, Castilla), names_to = "Genotipo", values_to = "Produccion")
+
+Mora_pn$Month <-factor(Mora_pn$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+```
+
+```{r promedios}
+Mora_pn_mean <- Mora_pn %>% group_by(Month, Genotipo) %>% summarize(mean = mean(Produccion, na.rm = T))
+```
+
+```{r acumulados}
+Mora_pn_cum <- read_excel("Data/DATOS CRUDOS MORA.xlsx", sheet = "Produccion_cum", na = ".")
+
+Mora_pn_cum <- Mora_pn_cum %>% pivot_longer(c(`San Antonio`, Brazos, Castilla), names_to = "Genotipo", values_to = "Produccion") %>% group_by(Month, Year, Genotipo) %>% summarize(acum = sum(Produccion , na.rm = T))
+
+Mora_pn_cum$Month <-factor(Mora_pn_cum$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+  
+
+```
+
+```{r cajas datos crudos_2020, fig.align='center', fig.width = 10, fig.height = 6, eval = F}
+Mora_pn %>% dplyr::filter(Year == 2020) %>%  ggplot(aes(x = Month, y = Produccion, fill = Month)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(title = "Producción 2020") +
+  facet_grid(~Genotipo)
+```
+
+```{r cajas datos crudos_2021, fig.align='center', fig.width = 10, fig.height = 6, eval = F}
+Mora_pn %>% dplyr::filter(Year == 2021) %>%  ggplot(aes(x = Month, y = Produccion, fill = Month)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(title = "Producción 2021") +
+  facet_grid(~Genotipo)
+```
+
+```{r}
+# Datos estandarizados
+
+Mora_pn_std <- Mora_pn %>% pivot_longer(c(`San Antonio Estandarizada`, `Brazos Estandarizada`, `Castilla Estandarizada`), names_to = "Genotipo_estandarizado", values_to = "Produccion_estandarizada")
+
+
+
+Mora_pn_std$Month <-factor(Mora_pn_std$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+
+```
+
+# Resultados
+
+A continuación se presentan los resultados de producción, calidad y estado fitosanitario del 3 materiales de Mora evaluados durante los periodos 2020 y 2021 bajo macrotúneles. 
+
+```{r barras_cum_2020, fig.align='center', fig.width = 10, fig.height = 6}
+Mora_pn_cum %>% dplyr::filter(Year == 2020) %>%  ggplot(aes(x = Month, y = acum)) +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = Genotipo), col = "black") +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(title = "Producción 2020", y = "Producción total (kg/parcela)", x = NULL) 
+
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Mora_pn_cum %>% dplyr::filter(Year == 2021) %>%  ggplot(aes(x = Month, y = acum)) +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = Genotipo), col = "black") +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(title = "Producción 2021", y = "Producción total (kg/parcela)", x = NULL) 
+```
+
+En las graficas previas e puede visualizar las producciones totales que hubo por material en cada periodo de evaluación (años 2020 y 2021). Para el primer periodo de evaluación se pudo notar que el genotipo **San Antonio** fue el que mas producción tuvo, alcanzando un una producción total de 71 kg para el mes de diciembre, mientras que Castilla y Brazos tuvieron una producción total de 27 y 30 kg respectivamente para el mes de diciembre. La producción acumulada correspondiente al periodo de 2020 puede verse en la siguiente tabla:
+
+| Nombre del genotipo | Producción (kg/parcela) |
+|---------------------|-------------------------|
+| San Antonio         | 211.037                 |
+| Castilla            | 73.510                  |
+| Brazos              | 71.505                  |
+
+Para el periodo 2021 se pudo evidenciar una estacionalidad en la producción, es decir, en los meses de marzo y agosto - septiembre se produjeron 2 picos de producción para los materiales Castilla y San Antonio, mientras que el material Brazos no mostró picos, puesto que su producción fue muy estable durante el periodo 2021. Las producciones acumuladas para el periodo 2021 pueden verse en la siguiente tabla.
+
+| Nombre del genotipo | Producción (kg/parcela) |
+|---------------------|-------------------------|
+| Castilla            | 604.9                   |
+| San Antonio         | 568.5                   |
+| Brazos              | 321.9                   |
+
+Es importante aclarar que las producciones acumuladas en cada periodo de evaluación mostradas previamente corresponden a poblaciones de plantas productivas en cada parcela; dichas poblaciones pueden verse en la siguiente tabla
+
++---------------------+-------------------------------+----------------------------------------+
+| Nombre del genotipo | Número de plantas productivas | Dimensiones de siembra (largo x ancho) |
++=====================+===============================+========================================+
+| San Antonio         | 126                           | 1.6m X 2m                              |
++---------------------+-------------------------------+----------------------------------------+
+| Castilla            | 85                            | 1.82m X 3m                             |
++---------------------+-------------------------------+----------------------------------------+
+| Brazos              | 53                            | 1.46m X 2m                             |
++---------------------+-------------------------------+----------------------------------------+
+
+# Análisis de varianza año 2020
+
+Se llevó a cabo un análisis de varianza de un **diseño completamente al azar** en donde los tratamientos estuvieron representados como los 3 materiales de *Rubus glaucus* evaluados. Las replicas correspondieron al numero de plantas productivas de cada material.
+
+La siguiente tabla muestra el análisis de varianza para el periodo de evaluación 2020, donde se puede evidenciar que el efecto "Genotipo" fue altamente significativo, es decir, que por lo menos uno de los materiales evaluados es estadísticamente diferente a los demás.
+
+```{r}
+mod.mora_2020 <- lm(Produccion ~ Genotipo, data = Mora_pn[Mora_pn$Year == "2020", ])
+# ANOVA para mostrar
+ao_mora <- anova(mod.mora_2020)
+ao_mora
+```
+
+Se llevó a cabo una prueba post Anova basada en el agrupamiento del criterio de Tukey.
+
+Efectivamente como se mencionó previamente, se observo que entre los 3 materiales evaluados, el que mejor producción en promedio tuvo para el periodo 2020 fue el genotipo San Antonio con un promedio de 2.064 kg/planta, seguido de Castilla sin espinas con 0.507 kg/planta y finalmente Brazos con 0.453 kg/planta. Las producciones proendio de Brazos y Castilla resultaron ser estadisticamente iguales (misma letra de agrupamiento), mientras que el promedio de producción de San Antonio fue estadisticamente diferente de los otros dos promedios.
+
+```{r}
+# Mean comparisons by Finca
+mean_comparisons_mora_2020 <- mod.mora_2020 %>% 
+  emmeans(pairwise ~ "Genotipo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_comparisons_mora_2020$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_comparisons_mora_2020$emmeans,
+    aes(y = emmean, x = Genotipo, fill = Genotipo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_comparisons_mora_2020$emmeans,
+    aes(y = emmean, x = Genotipo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.1), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab("Genotipos") +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción promedio 2020", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+En la gráfica anterior se ve representado el agrupamiento de Tukey para cada material evaluado.
+
+# Analisis de varianza año 2021
+
+La siguiente tabla muestra el análisis de varianza para el periodo de evaluación 2021, donde se puede evidenciar que el efecto "Genotipo" fue altamente significativo, es decir, que se estaría aceptando la hipotesis alternativa que indica que por lo menos uno de los materiales evaluados es estadísticamente diferente a los demás.
+
+```{r}
+mod.mora_2021 <- lm(Produccion ~ Genotipo, data = Mora_pn[Mora_pn$Year == "2021", ])
+# ANOVA para mostrar
+ao_mora_ <- anova(mod.mora_2021)
+ao_mora_
+```
+
+Se llevó a cabo una prueba post Anova basada en el agrupamiento del criterio de Tukey.
+
+La siguinete tabla muestra que entre los 3 materiales evaluados, el que mejor producción en promedio tuvo para el periodo 2021 fue el genotipo Castilla con un promedio de 7.29 kg/planta, seguido de San Antonio con 6.85 kg/planta y finalmente Brazos con 3.88 kg/planta. Las producciones promedio de San Antonio y Castilla resultaron ser estadisticamente iguales (misma letra de agrupamiento), mientras que el promedio de producción de Brazos fue estadisticamente diferente de los otros dos promedios.
+
+```{r}
+# Mean comparisons by Finca
+mean_comparisons_mora_2021 <- mod.mora_2021 %>% 
+  emmeans(pairwise ~ "Genotipo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_comparisons_mora_2021$emmeans # adjusted variety means
+```
+
+A continuación se muestra la representación gráfica del agrupamiento de Tukey mediante un diagrama de barras.
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021$emmeans,
+    aes(y = emmean, reorder(x = Genotipo, emmean),  fill = Genotipo
+  ), col = "black") +
+  geom_text(
+    data = mean_comparisons_mora_2021$emmeans,
+    aes(y = emmean, x = Genotipo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.4), size = 5) + 
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab("Genotipos") +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción 2021",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+# Analisis de varianza de la interacción 2021
+
+Adicionalmente al analisis de varianza presentado previamente, se decidió llevar a cabo un nuevo analisis de la varianza con un modelo factorial con interacción en función del genotipo, producción mensual y la interacción genotipo\*producción mensual solo para el año mas productivo que fue el 2021. Este analisis se hizo con el objetivo de destacar cuales cosechas dentro de cada genotipo presentaron diferencias estadisticas significativas.
+
+```{r}
+mod.mora_2021_I <- lm(Produccion ~ Genotipo*Month, data = Mora_pn[Mora_pn$Year == "2021", ])
+# ANOVA para mostrar
+ao_mora_I <- anova(mod.mora_2021_I)
+ao_mora_I
+```
+
+El analisis de varianza mostró que tanto los Genotipos como los meses de cosecha y la interacción entre los genotipos y las cosechas fueron altamente significativos.
+
+```{r}
+# Mean comparisons by Finca
+mean_comparisons_mora_2021_I <- mod.mora_2021_I %>% 
+  emmeans(pairwise ~ "Genotipo*Month", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+```
+
+A continuación se muestra la producción promedio de cada mes para el genotipo Castilla; donde se destacó los picos mas altos de producción que correspondieron a los meses agosto con 13.522 kg, septiembre con 15.200 kg y finalmente marzo con la producción promedia mas alta con 17.911 kg.
+
+```{r}
+mean_comparisons_mora_2021_I$emmeans %>% dplyr::filter(Genotipo == "Castilla") # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_I$emmeans %>% filter(Genotipo == "Castilla"),
+    aes(y = emmean, x = Month, fill = Month), show.legend = F,
+    color = "black") +
+  geom_text(
+    data = mean_comparisons_mora_2021_I$emmeans %>% filter(Genotipo == "Castilla"),
+    aes(y = emmean, x = Month, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.8, x = 0.1)
+  ) + 
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción promedio 2021 | Castilla",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+A continuación se muestra la producción promedio de cada mes para el genotipo San Antonio; donde se destacaron nuevamente los picos mas altos de producción correspondientes a los meses agosto con 13.37 kg, marzo con 13.29 kg y finalmente septiembre con 17.70 kg.
+
+```{r}
+mean_comparisons_mora_2021_I$emmeans %>% dplyr::filter(Genotipo == "San Antonio") # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_I$emmeans %>% filter(Genotipo == "San Antonio"),
+    aes(y = emmean, x = Month, fill = Month), show.legend = F,
+    color = "black") +
+  geom_text(
+    data = mean_comparisons_mora_2021_I$emmeans %>% filter(Genotipo == "San Antonio"),
+    aes(y = emmean, x = Month, label = .group),
+    color = "#333b69",
+    position = position_nudge(x = 0.1, y = 0.7)
+  ) + 
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción promedio 2021 | San Antonio",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+Finalmente a continuación se muestra la producción promedio del genotipo Brazos para cada mes; donde se evidenció que todas producciones mensuales no fueron estadisiticamente diferentes; confirmando la hipotesis nula que indica que todas los promedios deben der iguales en terminos estadisticos. Es por esta razón todos los promedios de producción se clasificaron en un solo grupo de acuerdo al criterio de Tukey.
+
+```{r}
+mean_comparisons_mora_2021_I$emmeans %>% dplyr::filter(Genotipo == "Brazos") # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_I$emmeans %>% filter(Genotipo == "Brazos"),
+    aes(y = emmean, x = Month, fill = Month), show.legend = F,
+    color = "#333b69"
+  ) +
+  geom_text(
+    data = mean_comparisons_mora_2021_I$emmeans %>% filter(Genotipo == "Brazos"),
+    aes(y = emmean, x = Month, label = .group),
+    color = "#333b69",
+    position = position_nudge(x = 0.1, y = 0.7)
+  ) + 
+  #ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción promedio 2021 | Brazos",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format
+```
+
+# Producción estandarizada
+
+A continuación se llevo a cabo el ajuste de los datos de producción mediante un calculo de estandarización de acuerdo a la muestra del material Brazos. Dicha estandarización se hizo teniendo en cuenta la siguiente ecuación:
+
+$$
+\text{Pn estandarizada = } (\text{Producción mensual}{\div} \text{número de plantas productivas})\star\ \text{numero de plantas productivas del genotipo Brazos}
+$$ La estandarización se hizo con respecto al genotipo Brazos ya que este fue el menos muestra de plantas productivas tuvo y por ende fue necesario que el resto de los materiales tambien se analizaran bajo el mismo número de muestra.
+
+```{r}
+# base de datos de pn estandarizada
+
+Pn_standarizada <- read.csv("Data/pn_acum.csv", sep = ";", header = T, na.strings = ".")
+
+Pn_standarizada$Month <-factor(Pn_standarizada$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+```
+
+# Producción acumulada estandarizada año 2020
+
+La siguiente gráfica muestra la producción estandarizada del año 2020; se evidenció que tanto el genotipo Brazos como San Antonio tuvieron una producción similar
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Pn_standarizada %>% dplyr::filter(Year == 2020) %>%  ggplot(aes(x = Month, y = Pn_estandarizada, fill = Month)) +
+  #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = Genotipo), col = "black") +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(title = "Producción estandarizada año 2020", y = "Producción total (kg/planta)") 
+```
+
+# Producción acumulada estandarizada año 2021
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+
+Ticks <- ("Meses")
+Pn_standarizada %>% dplyr::filter(Year == 2021) %>%  ggplot(aes(x = Month, y = Pn_estandarizada, fill = Month)) +
+  #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = Genotipo), col = "black") +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(y = "Producción total (kg/planta)", x = "Meses", fill = "Genotipos") +
+  theme(
+        text = element_text(size = 15))
+```
+
+En las graficas previas se pudo visualizar las producciones estandarizadas totales por material para cada periodo de evaluación (años 2020 y 2021). Para el primer periodo de evaluación se pudo notar que el tanto el genotipo San Antonio como el genotipo Brazos fueron los que mas producción tuvieron para el mes de diciembre 2020, alcanzando un una cifra total decembrina total de 29.90 y 30.90 kgrespectivamente, mientras que Castilla tuvo una producción de 16.83 kg para el mes de diciembre. La producción acumulada correspondiente al periodo de 2020 puede verse en la siguiente tabla:
+
+| Nombre del genotipo | Producción (kg/parcela) |
+|---------------------|-------------------------|
+| San Antonio         | 88.769                  |
+| Brazos              | 71.505                  |
+| Castilla            | 45.835                  |
+
+Para el periodo 2021 se pudo evidenciar nuevamente una estacionalidad en la producción, es decir, en los meses de marzo y agosto - septiembre se produjeron 2 picos de producción para todos los materiales, incluyendo el material Brazos que no mostró este comportamiento cuando se trabajo con los datos sin estandarizar. La producción acumulada correspondiente al periodo de 2021 puede verse en la siguiente tabla:
+
+| Nombre del genotipo | Producción (kg/parcela) |
+|---------------------|-------------------------|
+| Castilla            | 377.1                   |
+| Brazos              | 321.9                   |
+| San Antonio         | 239.1                   |
+
+A continuación se muestra el analisis de varianza para la variable producción estandarizada para el año 2020. Se llevo a cabo bajo un modelo completamente al azar en donde los materiales evaluados correspondieron a la variable independiente y la producción estandarizada correspondió a la variable dependiente.
+
+# Analisis de varianza año 2020 estandarizada
+
+```{r}
+mod.mora_2020_std <- lm(Produccion_estandarizada ~ Genotipo_estandarizado, data = Mora_pn_std[Mora_pn_std$Year == "2020", ])
+# ANOVA para mostrar
+ao_mora_2020_std <- anova(mod.mora_2020_std)
+ao_mora_2020_std
+```
+
+El analisis de varianza mostró que los materiales fueron estadisticamente significativos, por lo cual, se acepta la hipótesis alternativa que indica que por lo menos un material evaluado es diferente a los demas. A continuación se lleva a cabo la prueba post anova de Tukey.
+
+```{r}
+# Mean comparisons by Finca
+mean_comparisons_mora_2020_std <- mod.mora_2020_std %>% 
+  emmeans(pairwise ~ "Genotipo_estandarizado", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_comparisons_mora_2020_std$emmeans # adjusted variety means
+```
+
+La prueba de medias mostró que la producción promedio mas grande fue la del material San Antonio con 0.86 kg/planta, seguido de Brazos con 0.453 kg/planta y finalmente la producción promedio de Castilla con 0.316 kg/planta.
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_comparisons_mora_2020_std$emmeans,
+    aes(y = emmean, x = reorder(Genotipo_estandarizado, emmean), fill = Genotipo_estandarizado),show.legend = F,
+    color = "black"
+  ) +
+  # # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020_std$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_comparisons_mora_2020_std$emmeans,
+    aes(y = emmean, x = Genotipo_estandarizado, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.1)
+  ) + 
+  #ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción estandarizada (kg/planta)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción promedio 2020 estandarizada",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+# Analisis de varianza año 2021
+
+```{r}
+mod.mora_2021_std <- lm(Produccion_estandarizada ~ Genotipo_estandarizado, data = Mora_pn_std[Mora_pn_std$Year == "2021", ])
+# ANOVA para mostrar
+ao_mora_std <- anova(mod.mora_2021_std)
+ao_mora_std
+```
+
+El analisis de varianza para el año 2021 mostró que los materiales fueron estadisticamente significativos, por lo cual, se acepta la hipótesis alternativa que indica que por lo menos un material evaluado es diferente a los demas. A continuación se lleva a cabo la prueba post anova de Tukey.
+
+```{r}
+# Mean comparisons by Finca
+mean_comparisons_mora_2021_std <- mod.mora_2021_std %>% 
+  emmeans(pairwise ~ "Genotipo_estandarizado", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_comparisons_mora_2021_std$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_std$emmeans,
+    aes(y = emmean, x = reorder(Genotipo_estandarizado, emmean), fill = Genotipo_estandarizado),show.legend = F,
+    color = "black"
+  ) +
+  # red letters 
+  geom_text(
+    data = mean_comparisons_mora_2021_std$emmeans,
+    aes(y = emmean, x = Genotipo_estandarizado, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.3)
+  ) + 
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/planta)") + # label y-axis
+  xlab("Genotipos") +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción 2021 estandarizada",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+# Analisis de varianza de la interacción 2021
+
+Adicionalmente al analisis de varianza presentado previamente, se decidió llevar a cabo un nuevo analisis de la varianza con los datos estadnarizados con un modelo factorial con interacción en función del genotipo, producción mensual y la interacción genotipo\*producción mensual. Este analisis solo se llevó a cabo para el año mas productivo que fue el 2021. Este analisis se hizo con el objetivo de destacar cuales cosechas dentro de cada genotipo presentaron diferencias estadisticas significativas.
+
+```{r}
+mod.mora_2021_I_e <- lm(Produccion_estandarizada ~ Genotipo_estandarizado*Month, data = Mora_pn_std[Mora_pn_std$Year == "2021", ])
+# ANOVA para mostrar
+ao_mora_I_e <- anova(mod.mora_2021_I_e)
+ao_mora_I_e
+```
+
+El analisis de varianza mostró que tanto los Genotipos como los meses de cosecha y la interacción entre los genotipos y las cosechas fueron altamente significativos (p valores \< 0.05)
+
+```{r}
+mean_comparisons_mora_2021_I_e <- mod.mora_2021_I_e %>% 
+  emmeans(pairwise ~ "Genotipo_estandarizado*Month", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+```
+
+A continuación se muestra la producción estandarizada promedio de cada mes para el genotipo Castilla; donde se destacaron los picos mas altos de producción que correspondieron a los meses agosto con 8.432 kg, septiembre con 9.478 kg y finalmente marzo con la producción promedia mas alta con 11.168 kg.
+
+```{r}
+mean_comparisons_mora_2021_I_e$emmeans %>% dplyr::filter(Genotipo_estandarizado == "Castilla Estandarizada")%>% dplyr::select(-c("df", "lower.CL", "upper.CL")) # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_I_e$emmeans %>% filter(Genotipo_estandarizado == "Castilla Estandarizada"),
+    aes(y = emmean, x = Month, fill = Month), show.legend = F,
+    color = "black") +
+  geom_text(
+    data = mean_comparisons_mora_2021_I_e$emmeans %>% filter(Genotipo_estandarizado == "Castilla Estandarizada"),
+    aes(y = emmean, x = Month, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.8)
+  ) + 
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción estandarizada promedio 2021 | Castilla",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+A continuación se muestra la producción estandarizada promedio de cada mes para el genotipo San Antonio; donde se destacaron nuevamente los picos mas altos de producción correspondientes a los meses septiembre con 4.921 kg, marzo con 5.590 kg y finalmente agosto con 5.622 kg.
+
+```{r}
+mean_comparisons_mora_2021_I_e$emmeans %>% dplyr::filter(Genotipo_estandarizado == "San Antonio Estandarizada") %>% dplyr::select(-c("df", "lower.CL", "upper.CL")) # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_I_e$emmeans %>% filter(Genotipo_estandarizado == "San Antonio Estandarizada"),
+    aes(y = emmean, x = Month, fill = Month), show.legend = F,
+    color = "black") +
+  geom_text(
+    data = mean_comparisons_mora_2021_I_e$emmeans %>% filter(Genotipo_estandarizado == "San Antonio Estandarizada"),
+    aes(y = emmean, x = Month, label = .group),
+    color = "#333b69",
+    position = position_nudge(x = 0.1, y = 0.4)
+  ) + 
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción estandarizada promedio 2021 | San Antonio",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+```
+
+Finalmente a continuación se muestra la producción promedio del genotipo Brazos para cada mes; donde se evidenció 1 solo pico de producción correspondiente al mes de mayo; este pico de producción fue estadisticamente igual a los meses de febrero, abril, enero, septiembre, agosto y junio.
+
+```{r}
+mean_comparisons_mora_2021_I_e$emmeans %>% dplyr::filter(Genotipo_estandarizado == "Brazos Estandarizada") %>% dplyr::select(-c("df", "lower.CL", "upper.CL")) # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  geom_col(
+    data = mean_comparisons_mora_2021_I_e$emmeans %>% filter(Genotipo_estandarizado == "Brazos Estandarizada"),
+    aes(y = emmean, x = Month, fill = Month), show.legend = F,
+    color = "#333b69"
+  ) +
+  geom_text(
+    data = mean_comparisons_mora_2021_I_e$emmeans %>% filter(Genotipo_estandarizado == "Brazos Estandarizada"),
+    aes(y = emmean, x = Month, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.3)
+  ) + 
+  #ylim(0, NA) + # force y-axis to start at 0
+  ylab("Producción (kg/parcela)") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | Producción estandarizada promedio 2021 | Brazos",caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format
+```
+
+# Analisis de datos de temperatura
+
+Debido a que se contó con estaciones climaticas dentro de los macrotuneles, a continuación se mostrará el comportamiento de la variable temperatura para el año 202 y 2021.
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Mora_clima <- read_excel("Data/DATOS CRUDOS MORA.xlsx", 
+    sheet = "Clima", na = ".")
+
+Mora_clima$Month <-factor(Mora_clima$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+```
+
+```{r}
+Mora_clima_mean <- Mora_clima %>% dplyr::group_by(Macrotunel, Month, Year) %>% dplyr::summarise(Temp_mínima = mean(Temp_min, na.rm = T),
+                                                                             Temp_máxima = mean(Temp_max, na.rm = T),
+                                                                             Temp_ambiental = mean(Temp_amb, na.rm = T))
+Mora_clima_mean <- Mora_clima_mean %>% pivot_longer(c(Temp_mínima, Temp_ambiental, Temp_máxima), names_to = "Rangos", values_to = "Temperaturas")
+
+
+
+```
+
+La siguiente figura muestra la variación de la temperatura agrupada en temperatura ambiental, temperatura máxima y temperatura mínima. Es importante mencionar que en los meses de noviembre y diciembre no hubo profesional técnico encargado del cultivo, y por esta razon no se cuenta con datos de temperatura para dichos meses.
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+
+# año 2020
+Mora_clima_mean %>% dplyr::filter(Year == 2020) %>% 
+  ggplot() +
+  geom_point(aes(x = Month, y = Temperaturas , col = Rangos, shape = Rangos)) +
+  geom_line(aes(group = Rangos, x = Month, y = Temperaturas, col = Rangos)) +
+  
+  #geom_point(aes(x = Month, y = Temp_máxima), col = "blue") +
+  #geom_point(aes(x = Dias, y = Temp_amb), col = "black") +
+  labs(y = "Temperatura (ºC)", x = "Mes", title = "Variación de la temperatura año 2020") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~Macrotunel) 
+```
+
+La siguiente figura muestra la variacion de la temperatura para el año 2021; en la cual se puede destacar la función de los macrotuneles para la conservación de la temperatura mínima. Observando detenidamente la grafica, se puede concluir que la temperatura mínima del macrotunel 1 y 2 fue un poco mayor a la temperatura mínima del exterior.
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+
+# año 2021
+Mora_clima_mean %>% dplyr::filter(Year == 2021) %>% 
+  ggplot() +
+  geom_point(aes(x = Month, y = Temperaturas , col = Rangos, shape = Rangos)) +
+  geom_line(aes(group = Rangos, x = Month, y = Temperaturas, col = Rangos)) +
+  labs(y = "Temperatura (ºC)", x = "Mes", title = "Variación de la temperatura año 2021") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~Macrotunel) 
+
+```
+
+Como se afirmó previamente, en la siguiente grafica se puede apreciar de una mejor forma la variación de la temperatura en función de los macrotuneles; en donde la temperatura mínima promedio del macrotunel 1 y 2 fue 13.73ºC y 13.93ºC respectivamente, mientras que la del externo fue de 10.65ºC. De esta manera se estaría afirmando que los macrotuneles si funcionan para conservar la temperatura.
+
+```{r fig.align='center', fig.width = 10, fig.height = 5}
+Mora_clima_mean %>% dplyr::filter(Year == 2021) %>% group_by(Macrotunel, Rangos) %>% summarise(Prom_temp = mean(Temperaturas)) %>% ungroup() %>% ggplot() +
+  geom_col(stat = "identity", position = "dodge", aes(x = Macrotunel, y = Prom_temp, fill = Rangos), col = "black") +
+  labs(y = "Temperatura promedio (ºC)", x = NULL, title = "Variación de la temperatura promedio año 2021") +
+  theme_bw()
+```
+
+# Producción acumulada estandarizada
+
+A continuación se muestran las graficas de producción estandarizada acumulada de cada mes para cada tipo de material evaluado con la variable temperatura con el objetivo de correlacionar algún tipo de efecto en la producción.
+
+# Castilla sin espinas
+
+El material Castilla no muestra ninguna relación con la variable clima
+
+```{r fig.align='center', fig.width = 12, fig.height = 7}
+Pn_standarizada %>% dplyr::filter(Year == 2021, Genotipo == "Castilla") %>%  ggplot(aes(x = Month)) +
+  #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
+  geom_col(aes(y = Pn_estandarizada, fill = Month), col = "black", show.legend = F) +
+  geom_line(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas*5, group = Rangos, col = Rangos)) +
+  geom_point(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas*5, fill = Rangos), shape = 21, size = 3, show.legend = F) +
+  scale_y_continuous(sec.axis = sec_axis(~./5, name = "Temperatura (ºC)")) +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(y = "Producción total (kg/planta)", x = "Meses") +
+  theme(text = element_text(size = 15))
+```
+
+# Brazos
+
+El material Brazos no muestra ninguna relación con la variable clima
+
+```{r fig.align='center', fig.width = 12, fig.height = 7}
+Pn_standarizada %>% dplyr::filter(Year == 2021, Genotipo == "Brazos") %>%  ggplot(aes(x = Month)) +
+  geom_col(aes(y = Pn_estandarizada, fill = Month), col = "black", show.legend = F) +
+  geom_line(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas*5, group = Rangos, col = Rangos)) +
+  geom_point(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas*5, fill = Rangos), shape = 21, size = 3, show.legend = F) +
+  #geom_line(data = Mora_clima_mean, aes(group = Rangos)) +
+  scale_y_continuous(sec.axis = sec_axis(~./5, name = "Temperatura (ºC)")) +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(y = "Producción total (kg/planta)", x = "Meses") +
+  theme(text = element_text(size = 15))
+```
+
+# San Antonio
+
+El material San Antonio no muestra ninguna relación con la variable clima
+
+```{r fig.align='center', fig.width = 10, fig.height = 7}
+Pn_standarizada %>% dplyr::filter(Year == 2021, Genotipo == "San Antonio") %>%  ggplot(aes(x = Month)) +
+  geom_col(aes(y = Pn_estandarizada, fill = Month), col = "black", show.legend = F) +
+  geom_line(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas*5, group = Rangos, col = Rangos)) +
+  geom_point(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas*5, fill = Rangos), shape = 21, size = 3, show.legend = F) +
+  #geom_line(data = Mora_clima_mean, aes(group = Rangos)) +
+  scale_y_continuous(sec.axis = sec_axis(~./5, name = "Temperatura (ºC)")) +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(y = "Producción total (kg/planta)", x = "Meses") +
+  theme(text = element_text(size = 15))
+```
+
+# Estimación de la variable rendimiento
+
+A continuación se muestran las respuestas para la variable rendimiento estimado para los materiales evaluados. Esta estimación se calculo mediante la producción acumulada estandarizada multiplicada por la cantidad de plantas disponibles en un área de 1 hectárea.
+
+# Castilla sin espinas Rendimiento T/ha sin clima
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Pn_standarizada %>% dplyr::filter(Year == 2021, Genotipo == "Castilla") %>%  ggplot(aes(x = Month)) +
+  #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
+  geom_col(aes(y = Rto_t_ha, fill = Month), col = "black", show.legend = F) +
+  #geom_line(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas, group = Rangos, col = Rangos)) +
+  #geom_point(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas, fill = Rangos), shape = 21, size = 3, show.legend = F) +
+  #scale_y_continuous(sec.axis = sec_axis(~., name = "Temperatura (ºC)")) +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(y = "Rendimiento (t/ha)", x = NULL) +theme(
+        text = element_text(size = 15))
+  
+```
+
+# Castilla sin espinas Rendimiento T/ha sin clima
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Pn_standarizada %>% dplyr::filter(Year == 2021, Genotipo == "Brazos") %>%  ggplot(aes(x = Month)) +
+  #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
+  geom_col(aes(y = Rto_t_ha, fill = Month), col = "black", show.legend = F) +
+  #geom_line(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas, group = Rangos, col = Rangos)) +
+  #geom_point(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas, fill = Rangos), shape = 21, size = 3, show.legend = F) +
+  #scale_y_continuous(sec.axis = sec_axis(~., name = "Temperatura (ºC)")) +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+ labs(y = "Rendimiento (t/ha)", x = NULL) +theme(
+        text = element_text(size = 15))
+```
+
+
+
+# Castilla sin espinas Rendimiento T/ha sin clima
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Pn_standarizada %>% dplyr::filter(Year == 2021, Genotipo == "San Antonio") %>%  ggplot(aes(x = Month)) +
+  #geom_bar(stat = "identity", position = "dodge", aes(y = Pn_estandarizada,  fill = Genotipo), col = "black") +
+  geom_col(aes(y = Rto_t_ha, fill = Month), col = "black", show.legend = F) +
+  #geom_line(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas, group = Rangos, col = Rangos)) +
+  #geom_point(data = Mora_clima_mean %>% dplyr::filter(Year == 2021, Macrotunel == "Macrotunel 2", !Rangos == "Temp_ambiental"), aes(y = Temperaturas, fill = Rangos), shape = 21, size = 3, show.legend = F) +
+  #scale_y_continuous(sec.axis = sec_axis(~., name = "Temperatura (ºC)")) +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  theme_bw() +
+  labs(y = "Rendimiento (t/ha)", x = NULL) +theme(
+        text = element_text(size = 15))
+
+```
+
+# Produccion mensual y rendimiento estimado mensual
+
+En la siguiente grafica se puede ver la producción mensual junto con el rendimiento estimado mensual para cada material evaluado; se puede notar que la relación producción:rendimiento estimado es muy buena para el material Castilla. Por otra parte los rendimiento estimados para los materiales Castilla y San Antonio fueron muy similares para los meses marzo, agosto y septiembre; sin embargo las producciones fueron superiores para el material Castilla. Es por esta razon que se afirma que el material Castilla tuve mejores rendimientos.
+
+```{r fig.align='center', fig.width = 15, fig.height = 6}
+Pn_standarizada %>% dplyr::filter(Year == 2021) %>%  ggplot(aes(x = Month)) +
+  geom_col(aes(y = Pn_estandarizada, fill = Month), col = "black", show.legend = F) +
+  geom_line(aes(y = Rto_t_ha*15, group = Genotipo), col = "black") +
+  geom_point(aes(y = Rto_t_ha*15, fill = Genotipo, shape = Genotipo), size = 3, show.legend = F) +
+  #geom_line(data = Mora_clima_mean, aes(group = Rangos)) +
+  scale_y_continuous(sec.axis = sec_axis(~./15, name = "Rendimiento estimado (t/ha)")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(title = "Producción estandarizada y rendimiento estimado 2021", y = "Producción total (kg/planta)", x = NULL) +
+  facet_wrap(~Genotipo)
+```
+
+# Rendimiento estimado anual
+
+
+A continuación se muestra la tabla correspondiente a la producción acumulada en kg, rendimiento estimado acumulado en t/ha y la cantidad de plantas sembradas estimadas para 1 ha para el año 2021; se puede notar que el mejor rendimiento total fue el de el material Brazos y la mejor producción real acumulada fue para el material Castilla. En conclusión, desde el punto de vista economico, es mas viable producir mora con el material Brazos ya que se pueden sembrar mas plantas por unidad de área comparada con San Antonio y Castilla.
+
+```{r eval=FALSE}
+# Pn_standarizada %>% dplyr::filter(Year == 2021) %>% group_by(Genotipo) %>% summarise(Pn_acumulada = sum(Pn_estandarizada),
+#                                                                                      Rto = sum(Rto_t_ha)) %>% arrange(desc(Rto))
+```
+
+| Genotipo    | Producción acum. (kg/parcela) | Rendimiento estimado (t/ha) | Plantas estimadas (pl/ha) |
+|-------------|-------------------------------|-----------------------------|---------------------------|
+| Brazos      | 321.900                       | 20.799                      | 3424                      |
+| San Antonio | 239.131                       | 14.099                      | 3125                      |
+| Castilla    | 377.172                       | 13.033                      | 1831                      |
+
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+Pn_standarizada %>% dplyr::filter(Year == 2021) %>% group_by(Genotipo) %>% summarise(Rento_acumulada_std = sum(Rto_t_ha)) %>% ggplot(aes(x = reorder(Genotipo, Rento_acumulada_std))) + geom_bar(stat = "identity", position = "dodge", aes(y = Rento_acumulada_std, fill = Genotipo), col = "black", show.legend = F) +
+  labs(y = "Rendimiento estimado (t/ha)", x = NULL, title = "Rendimiento acumulado estimado año 2021") +
+  theme_bw()
+```
+
+# Analisis de calidad (grados brix)
+
+A continuación se muestran las graficas correspondientes a los datos de grados brix tomados durante el ciclo productivo a los materiales evaluados. Se puede visualizar como varió la acumulación de solidos solubles en cada uno de los materiales evalaluados a traves de tiempo
+
+
+```{r}
+Calidad_mora <- read_excel("Data/DATOS CRUDOS MORA.xlsx",
+    sheet = "Solidos")
+
+Calidad_mora <- Calidad_mora %>% dplyr::select(c(FECHA, MUESTRA, Genotipo, `BRIXº` ))
+```
+
+```{r}
+Calidad_mora_prom <- read_excel("Data/DATOS CRUDOS MORA.xlsx",
+    sheet = "Solidos_promedio")
+
+Calidad_mora_prom <- Calidad_mora_prom %>% pivot_longer(c(Brazos, `San Antonio`, Castilla), names_to = "Genotipo", values_to = "Grados_brix")
+
+Calidad_mora_prom$Mes <-factor(Calidad_mora_prom$Mes, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+```
+
+```{r fig.align='center', fig.width = 13, fig.height = 5}
+# Calidad_mora_prom %>% dplyr::filter(Year == 2021) %>% ggplot() +
+#   geom_line(aes(x = Mes, y = Grados_brix, group = Genotipo, col = Genotipo)) +
+#   geom_point(aes(x = Mes, y = Grados_brix, shape = Genotipo, color = Genotipo), size = 3) +
+#   facet_grid(~Genotipo) +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(hjust = 1 , angle = 45)) 
+```
+
+```{r fig.align='center', fig.width = 13, fig.height = 5}
+Pn_standarizada %>% dplyr::filter(Year == 2021) %>%  ggplot() +
+  geom_col(aes(x = Month, y = Pn_estandarizada, fill = Month), col = "black", show.legend = F) +
+  geom_line(data = Calidad_mora_prom %>% dplyr::filter(Year == 2021), aes(x = Mes, y = Grados_brix*10, group = Genotipo, col = Genotipo), show.legend = F) +
+  geom_point(data = Calidad_mora_prom %>% dplyr::filter(Year == 2021), aes(x = Mes, y = Grados_brix*10, fill = Genotipo, shape = Genotipo), show.legend = F) +
+  scale_y_continuous(sec.axis = sec_axis(~./10, name = "Grados Brix (t/ha)")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(title = "Producción estandarizada y grados brix 2021", y = "Producción total (kg/planta)", x = NULL) +
+  facet_wrap(~Genotipo) 
+```
+
+
+# Analisis de plagas Áfidos
+
+A continuación se muestran las graficas correspondientes al % de incidencia de afidos encontrados en cada uno de los materiales evaluados.
+
+```{r}
+afidos_mora <- read_excel("Data/DATOS CRUDOS MORA.xlsx",
+    sheet = "Afidos", na = ".")
+
+afidos_mora$abril_2020 = as.double(afidos_mora$abril_2020)
+
+afidos_mora <- afidos_mora %>% pivot_longer(c(abril_2020,	mayo_2020,	junio_2020,	julio_2020,	agosto_2020,	septiembre_2020,	octubre_2020,	noviembre_2020,	diciembre_2020,	enero_2021,	febrero_2021,	marzo_2021,	abril_2021,	mayo_2021,	junio_2021), names_to = "Date", values_to = "Incidencia")
+
+afidos_mora <- afidos_mora %>% separate(Date, into = c("Month", "Year"), sep = "_")
+
+afidos_mora$Month <-factor(afidos_mora$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+
+# Aqui puedo hacer un Anova general por genotipo
+```
+Se puede notar en ambos años de evaluación (2020 y 2021), que el material Brazos mostró muy bajo % de incidencia de afidos, mientras que Castilla y San Antonio mostraron un % de incidencia moderado y alto para los meses de septiembre de 2020 y abril de 2021. Este alto % de incidencia se debe basicamente a que para esos meses no hubo profesional tecnico encargado del cultivo y por lo tanto no fue posible llevar a cabo las diferentes aplicaciones preventivas de insecticida. 
+
+```{r fig.align='center', fig.width = 13, fig.height = 5}
+afidos_mora %>% dplyr::group_by(Cultivo, Month, Year) %>% summarise(Incidencia = mean(Incidencia, na.rm = T)) %>% dplyr::filter(Year == 2020) %>%  ggplot() + 
+  geom_line(aes(x = Month, y = Incidencia, group = Cultivo, col = Cultivo)) + 
+  geom_point(aes(x = Month, y = Incidencia, color = Cultivo, shape = Cultivo), size = 3) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 90)) +
+  labs(y = "% Incidencia áfidos", title = "% incidencia de afidos año 2020") +
+  facet_grid(~Cultivo)
+```
+
+```{r fig.align='center', fig.width = 13, fig.height = 5}
+afidos_mora %>% dplyr::group_by(Cultivo, Month, Year) %>% summarise(Incidencia = mean(Incidencia, na.rm = T)) %>% dplyr::filter(Year == 2021) %>%  ggplot() + 
+  geom_line(aes(x = Month, y = Incidencia, group = Cultivo, col = Cultivo)) + 
+  geom_point(aes(x = Month, y = Incidencia, color = Cultivo, shape = Cultivo), size = 3) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 90)) +
+  labs(y = "% Incidencia áfidos", title = "% incidencia de afidos año 2021") +
+  facet_grid(~Cultivo)
+```
+
+# Analisis de varianza áfidos
+
+A continuación se presenta el analisis de varianza para la plaga Áfidos; se llevo a cabo un modelo estadistico bajo un diseño completamente al azar en donde la variable independiente fueron los materiales evaluados y la varriable dependiente fué la incidencia de los áfidos.
+
+```{r}
+afido_anova <- afidos_mora %>% dplyr::group_by(Cultivo, Month, Year) %>% summarise(Incidencia = mean(Incidencia, na.rm = T))
+
+mod.mora_afido <- lm(Incidencia ~ Cultivo, data = afido_anova)
+# ANOVA para mostrar
+ao_mora_afido <- anova(mod.mora_afido)
+ao_mora_afido
+```
+La tabla previa muestra que hubo un efecto estadistico significativo en la incidencia de los áfidos sobre los materiales evaluados. A continuación se muestra la el resultado del agrupamiento de Tukey.
+
+
+
+Se llevó a cabo una prueba post Anova basada en el agrupamiento del criterio de Tukey; en la cual se encontró que Brazos fue el material que menor incidencia tuvo, seguido de San Antonio con 20.383 % y finalmente Castilla sin espinas con 21.233 %. El material Brazos fue el unico diferentes en terminos estadisticos, ya que su agrupamiento fue con la letra "a", mientras que San Antonio y Castilla se agruparon bajo la letra "b", es decir, estos dos ultimos materiales resultaron ser estadisticamente iguales.
+
+```{r}
+# Mean comparisons by Finca
+mean_comparisons_afidos <- mod.mora_afido %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_comparisons_afidos$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_comparisons_afidos$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_comparisons_afidos$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.8), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Incidencia áfidos") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Incidencia de áfidos", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+
+# Oidium
+
+Se pudo notar que el porcentaje de incidencia y severidad de *Oidium* para ambos años de evaluación (2020 y 2021), tuvieron un efecto significativo en los materiales Castilla y San Antonio; el material Brazos mostró una alta tolerancia durante los dos años de evaluación.
+
+```{r}
+Oidium_mora <- read_excel("Data/DATOS CRUDOS MORA.xlsx",
+    sheet = "Oidium", na = ".")
+
+Oidium_mora <- Oidium_mora %>% pivot_longer(c(abril_2020,	mayo_2020,	junio_2020,	julio_2020,	agosto_2020,	octubre_2020,	noviembre_2020,	febrero_2021,	marzo_2021,	abril_2021,	mayo_2021,	junio_2021, julio_2021, agosto_2021), names_to = "Date", values_to = "Value")
+
+Oidium_mora <- Oidium_mora %>% separate(Date, into = c("Month", "Year"), sep = "_")
+
+Oidium_mora$Month <-factor(Oidium_mora$Month, 
+                      levels = c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre", "noviembre", "diciembre"))
+```
+
+```{r fig.align='center', fig.width = 13, fig.height = 5}
+Oidium_mora %>% dplyr::group_by(Efecto, Cultivo, Month, Year) %>% summarise(Value = mean(Value, na.rm = T)) %>% dplyr::filter(Year == 2020) %>%  ggplot() + 
+  geom_line(aes(x = Month, y = Value, group = Efecto, col = Cultivo), show.legend = F) + 
+  geom_point(aes(x = Month, y = Value, color = Cultivo, shape = Efecto), size = 3, show.legend = T) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 90)) +
+  labs(y = "% efecto") +
+  labs(title = "Efecto Oidium año 2020") +
+  facet_grid(~Cultivo, scales = "free_y")
+```
+
+```{r fig.align='center', fig.width = 13, fig.height = 5}
+Oidium_mora %>% dplyr::group_by(Efecto, Cultivo, Month, Year) %>% summarise(Value = mean(Value, na.rm = T)) %>% dplyr::filter(Year == 2021) %>%  ggplot() + 
+  geom_line(aes(x = Month, y = Value, group = Efecto, col = Cultivo), show.legend = F) + 
+  geom_point(aes(x = Month, y = Value, color = Cultivo, shape = Efecto), size = 3, show.legend = T) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 90)) +
+  labs(y = "% efecto") +
+  labs(title = "Efecto Oidium año 2021") +
+  facet_grid(~Cultivo, scales = "free_y")
+```
+
+# Analisis de varianza para % de Incidencia de Oidium
+
+A continuación se presenta el analisis de varianza para la variable % de incidencia de Oidium; se llevo a cabo un modelo estadistico bajo un diseño completamente al azar en donde la variable independiente fueron los materiales evaluados y la variable dependiente fué el % de incidencia de los áfidos.
+
+```{r}
+Incidencia_oidium <- Oidium_mora %>% dplyr::filter(Efecto == "Incidencia") %>%  dplyr::group_by(Efecto, Cultivo, Month, Year) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.inci_oidium <- lm(Value ~ Cultivo, data = Incidencia_oidium)
+# ANOVA para mostrar
+ao_inci_oidium <- anova(mod.inci_oidium)
+ao_inci_oidium
+```
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_inci_oidium <- mod.inci_oidium %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_inci_oidium$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_inci_oidium$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_inci_oidium$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 1.4), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Incidencia oidium") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Incidencia de Oidium", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+# Analisis de varianza para % de Severidad de Oidium
+
+A continuación se presenta el analisis de varianza para la variable % de severidad de Oidium; se llevo a cabo un modelo estadistico bajo un diseño completamente al azar en donde la variable independiente fueron los materiales evaluados y la variable dependiente fué el % de incidencia de los áfidos.
+
+```{r}
+Severidad_oidium <- Oidium_mora %>% dplyr::filter(Efecto == "Severidad") %>%  dplyr::group_by(Efecto, Cultivo, Month, Year) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.sev_oidium <- lm(Value ~ Cultivo, data = Severidad_oidium)
+# ANOVA para mostrar
+ao_sev_oidium <- anova(mod.sev_oidium)
+ao_sev_oidium
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_sev_oidium <- mod.sev_oidium %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_sev_oidium$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_sev_oidium$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_sev_oidium$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.4), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Incidencia oidium") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Severidad de Oidium", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+# Antracnosis Botritis y Mildeo Velloso
+
+En la siguiente grafica se puede notar las evaluaciones de *Antracnosis, Botritis y Mildeo Velloso* para el periodo 2021 del porcentaje de incidencia y severidad. El material Brazos resultó ser bastante suceptible a Antracnosis y muy tolerante a Botritis y a Mildeo Velloso. Castilla sin espinas y San Antonio fueron medianamente tolerantes a todas las enfermedades.
+
+```{r}
+Enfermedades_mora <- read_excel("Data/DATOS CRUDOS MORA.xlsx",
+    sheet = "Enfermedades", na = ".")
+
+Enfermedades_mora$Month <-factor(Enfermedades_mora$Month, 
+                      levels = c("febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                 "agosto", "septiembre", "octubre"))
+
+Antracnosis_mora <- Enfermedades_mora %>% dplyr::filter(Enfermedad == "Antracnosis")
+
+# Oidium_mora <- Oidium_mora %>% separate(Date, into = c("Month", "Year"), sep = "_")
+
+```
+
+```{r fig.align='center', fig.width = 13, fig.height = 6}
+Enfermedades_mora %>% ggplot() + 
+  geom_line(aes(x = Month, y = Value, group = Efecto, col = Efecto), show.legend = F) + 
+  geom_point(aes(x = Month, y = Value, color = Efecto, shape = Efecto), size = 3, show.legend = T) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(hjust = 1 , angle = 45)) +
+  labs(y = "% efecto", title = "Efecto de Antracnosis, Botritis y Mildeo Vellosos") +
+  facet_grid(Enfermedad~Cultivo)
+```
+
+A continuación se muestra la grafica correspondiente al promedio de todo el periodo de evaluación; en donde se puede concluir que la enfermedad mas agresiva fue Antracnosis, seguida de Mildeo Vellosos y finalmente Botritis. Adicionalmente el material Brazos fue el que mas mostró suceptibilidad a Antracnosis pero simultaneamente fue el mas resistencia tuvo con Botritis y Mildeo Velloso. Los materiales Castilla y San antonio mostrarón mediana suceptibilidad a Botritis y Mildeo Velloso.
+
+```{r fig.align='center', fig.width = 13, fig.height = 6}
+Enfermedades_mora %>% dplyr::group_by(Enfermedad, Efecto, Cultivo) %>% dplyr::summarise(Value = mean(Value)) %>% ggplot(aes(y = Value)) +
+  geom_bar(stat = "identity", position = "dodge", aes(x = Cultivo, fill = Efecto), col = "black") +
+  theme_bw() +
+  labs(y = "% efecto", title = "Efecto medio de Antracnosis, Botritis y Mildeo Vellosos") +
+  facet_wrap(~Enfermedad)
+```
+
+
+# Analisis de varianza para Incidencia y severidad de Antracnosis
+
+## Severidad de Antracnosis
+
+```{r}
+Severidad_antracnosis <- Antracnosis_mora %>%  dplyr::filter(Efecto == "Severidad") %>% dplyr::group_by(Month, Cultivo) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.sev_antrac <- lm(Value ~ Cultivo, data = Severidad_antracnosis)
+# ANOVA para mostrar
+ao_sev_antrac <- anova(mod.sev_antrac)
+ao_sev_antrac
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_sev_antrac <- mod.sev_antrac %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_sev_antrac$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_sev_antrac$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_sev_antrac$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 1), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Severidad Antracnosis") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Severidad de Antracnosis", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+
+
+
+
+
+
+## Icidencia de Antracnosis
+
+```{r}
+Incidencia_antracnosis <- Antracnosis_mora %>%  dplyr::filter(Efecto == "Incidencia") %>% dplyr::group_by(Month, Cultivo) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.inc_antrac <- lm(Value ~ Cultivo, data = Incidencia_antracnosis)
+# ANOVA para mostrar
+ao_inc_antrac <- anova(mod.inc_antrac)
+ao_inc_antrac
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_inc_antrac <- mod.inc_antrac %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_inc_antrac$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_inc_antrac$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_inc_antrac$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 1.8), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Incidencia Antracnosis") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Incidencia de Antracnosis", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+# Analisis de varianza para Incidencia y severidad de Botritis
+
+## Severidad de Botritis
+
+```{r}
+
+botritis_mora <- Enfermedades_mora %>% dplyr::filter(Enfermedad == "Botritis")
+Severidad_botritis <- botritis_mora %>%  dplyr::filter(Efecto == "Severidad") %>% dplyr::group_by(Month, Cultivo) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.sev_botri <- lm(Value ~ Cultivo, data = Severidad_botritis)
+# ANOVA para mostrar
+ao_sev_botri <- anova(mod.sev_botri)
+ao_sev_botri
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_sev_botri <- mod.sev_botri %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_sev_botri$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_sev_botri$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_sev_botri$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.2), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Severidad Botritis") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Severidad de botritis", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+## Icidencia de botritis
+
+```{r}
+Incidencia_botritis <- botritis_mora %>%  dplyr::filter(Efecto == "Incidencia") %>% dplyr::group_by(Month, Cultivo) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.inc_botri <- lm(Value ~ Cultivo, data = Incidencia_botritis)
+# ANOVA para mostrar
+ao_inc_botri <- anova(mod.inc_botri)
+ao_inc_botri
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_inc_botri <- mod.inc_botri %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_inc_botri$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_inc_botri$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_inc_botri$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.4), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Incidencia Botritis") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Incidencia de botritis", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+
+
+
+
+-
+
+# Analisis de varianza para Incidencia y severidad de Mildeo Velloso
+
+## Severidad de Mildeo Velloso
+
+```{r}
+
+Mildeo_velloso_mora <- Enfermedades_mora %>% dplyr::filter(Enfermedad == "Mildeo Velloso")
+Severidad_Mildeo_velloso <- Mildeo_velloso_mora %>%  dplyr::filter(Efecto == "Severidad") %>% dplyr::group_by(Month, Cultivo) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.sev_Mild_vell <- lm(Value ~ Cultivo, data = Severidad_Mildeo_velloso)
+# ANOVA para mostrar
+ao_sev_Mild_vell <- anova(mod.sev_Mild_vell)
+ao_sev_Mild_vell
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_sev_Mild_vell <- mod.sev_Mild_vell %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_sev_Mild_vell$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_sev_Mild_vell$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_sev_Mild_vell$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.4), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Severidad Mildeo_velloso") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Severidad de Mildeo Velloso", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+## Icidencia de Mildeo Velloso
+
+```{r}
+Incidencia_Mildeo_velloso <- Mildeo_velloso_mora %>%  dplyr::filter(Efecto == "Incidencia") %>% dplyr::group_by(Month, Cultivo) %>% summarise(Value = mean(Value, na.rm = T))
+
+mod.inc_Mild_vell <- lm(Value ~ Cultivo, data = Incidencia_Mildeo_velloso)
+# ANOVA para mostrar
+ao_inc_Mild_vell <- anova(mod.inc_Mild_vell)
+ao_inc_Mild_vell
+```
+
+
+
+```{r}
+# Mean comparisons by Incidencia Oidium
+mean_inc_Mild_vell <- mod.inc_Mild_vell %>% 
+  emmeans(pairwise ~ "Cultivo", adjust="tukey") %>% 
+  pluck("emmeans") %>% 
+  cld(details=TRUE, Letters=letters) # add letter display
+
+mean_inc_Mild_vell$emmeans # adjusted variety means
+```
+
+```{r fig.align='center', fig.width = 10, fig.height = 6}
+# plotting Results for Tto para mostrar
+ggplot() +
+  # #black dots representing the raw data
+  # geom_point(
+  #   data = Mora_pn[Mora_pn$Year == "2020", ],
+  #   aes(y = Produccion, x = reorder(Genotipo, Produccion))
+  # ) +
+  #red dots representing the adjusted means
+  geom_col(
+    data = mean_inc_Mild_vell$emmeans,
+    aes(y = emmean, x = reorder(Cultivo, emmean), fill = Cultivo
+  ), col = "black") +
+  # red error bars representing the confidence limits of the adjusted means
+  # geom_errorbar(
+  #   data = mean_comparisons_mora_2020$emmeans,
+  #   aes(ymin = lower.CL, ymax = upper.CL, x = Genotipo),
+  #   color = "#333b69",
+  #   width = 0.1,
+  #   position = position_nudge(x = 0.1)
+  # ) +
+  # red letters 
+  geom_text(
+    data = mean_inc_Mild_vell$emmeans,
+    aes(y = emmean, x = Cultivo, label = .group),
+    color = "#333b69",
+    position = position_nudge(y = 0.8), size = 5) +
+  ylim(0, NA) + # force y-axis to start at 0
+  ylab("% Incidencia Mildeo_velloso") + # label y-axis
+  xlab(NULL) +      # label x-axis
+  labs(title = "Agrupamiento de Tukey | % Incidencia de Mildeo Velloso", caption = "
+       Promedios con letras iguales no son significativamente diferentes de acuerdo a la prueba de Tukey.
+       ") +
+  theme_bw() # clearer plot format 
+
+```
+
+
+
+
+
+
